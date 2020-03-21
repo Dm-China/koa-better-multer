@@ -3,13 +3,13 @@ const asyncBusboy = require('async-busboy');
 const Fex = require('./exception');
 
 // 解析文件数据
-async function multer (options) {
-  const contentType = this.req.headers['content-type'];
+async function multer (ctx, options) {
+  const contentType = ctx.req.headers['content-type'];
   if (!contentType.includes('multipart')) {
     throw new Fex('Content-Type must be multipart/*');
   }
   const filePromises = [];
-  await asyncBusboy(this.req, {
+  await asyncBusboy(ctx.req, {
     onFile: async function (fieldname, file, filename, encoding, mimetype) {
       const filePromise = new Promise((resolve, reject) => {
         const bufs = [];
