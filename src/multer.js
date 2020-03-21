@@ -1,15 +1,15 @@
 const asyncBusboy = require('async-busboy');
 
-const Fex = require('./exception')
+const Fex = require('./exception');
 
 // 解析文件数据
-async function multer (ctx, options) {
-  const contentType = ctx.req.headers['content-type'];
+async function multer (options) {
+  const contentType = this.req.headers['content-type'];
   if (!contentType.includes('multipart')) {
-    throw new Fex('Content-Type must be multipart/*')
+    throw new Fex('Content-Type must be multipart/*');
   }
   const filePromises = [];
-  await asyncBusboy(ctx.req, {
+  await asyncBusboy(this.req, {
     onFile: async function (fieldname, file, filename, encoding, mimetype) {
       const filePromise = new Promise((resolve, reject) => {
         const bufs = [];
@@ -43,13 +43,13 @@ async function multer (ctx, options) {
     const fileExt = file.filename.split('.').pop();
     // 验证文件类型
     if (!_verifyExt(fileExt, options && options.include, options && options.exclude)) {
-      throw new Fex(`Does not support files of file type ${fileExt}`)
+      throw new Fex(`Does not support files of file type ${fileExt}`);
     }
 
     // 验证单个文件的大小
     const { verid, confSize } = _verifySingleFileSize(file.size, options && options.singleLimit);
     if (!verid) {
-      throw new Fex(`file: ${file.filename}，size cannot exceed ${confSize} bytes`)
+      throw new Fex(`file: ${file.filename}，size cannot exceed ${confSize} bytes`);
     }
 
     // 计算总大小
@@ -59,24 +59,23 @@ async function multer (ctx, options) {
   }
 
   // 验证文件数量
-  const { verid, confNums } = _verifyFileNums(files.length, options && options.nums);
+  const { verid, confNums = 10 } = _verifyFileNums(files.length, options && options.nums);
   if (!verid) {
-    throw new Fex(`The number of files cannot exceed ${confNums}`)
+    throw new Fex(`The number of files cannot exceed ${confNums}`);
   }
 
+  // 验证文件总大小
   const { verid: verid1, confTotalSize } = _verifyTotalFileSize(totalSize, options && options.totalLimit);
   if (!verid1) {
-    throw new Fex(`The total file size cannot exceed ${confTotalSize} bytes`)
+    throw new Fex(`The total file size cannot exceed ${confTotalSize} bytes`);
   }
 
   return files;
 }
 
-
-
 function _verifyExt (ext, include, exclude) {
-  const fileInclude = include
-  const fileExclude = exclude
+  const fileInclude = include;
+  const fileExclude = exclude;
   // 只要有fileInclude，取fileInclude
   if (fileInclude) {
     if (!Array.isArray(fileInclude)) {
@@ -100,29 +99,28 @@ function _verifyExt (ext, include, exclude) {
 };
 
 function _verifySingleFileSize (size, singleLimit) {
-  const confSize = singleLimit
-
+  const confSize = singleLimit;
   return {
-    verid: confSize > size,
+    verid: confSize ? (confSize > size) : true,
     confSize
   };
 }
 
 function _verifyFileNums (nums, fileNums) {
-  const confNums = fileNums
+  const confNums = fileNums;
   return {
-    verid: confNums > nums,
+    verid: confNums ? (confNums > nums) : true,
     confNums
   };
 }
 
 function _verifyTotalFileSize (size, totalLimit) {
-  const confTotalSize = totalLimit
+  const confTotalSize = totalLimit;
 
   return {
-    verid: confTotalSize > size,
+    verid: confTotalSize ? (confTotalSize > size) : true,
     confTotalSize
   };
 }
 
-module.exports = { multer };
+module.exports = multer;
